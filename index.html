@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IKVATOR - Voice & Video Call App</title>
-    <!-- ZegoCloud Global Script (No Module Import Error) -->
+    <!-- ZegoCloud Prebuilt UIKit Global Script -->
     <script src="https://zegocloud.github.io/zego_uikit_prebuilt_web/zego_uikit_prebuilt_web.js"></script>
     <style>
         body {
@@ -84,7 +84,7 @@
     <h2>IKVATOR</h2>
     <div id="reg-section">
         <input type="text" id="username" placeholder="Enter your name to register">
-        <button class="action-btn" onclick="registerUser()">Register</button>
+        <button class="action-btn" id="register-btn">Register</button>
     </div>
 
     <h3>Active Users</h3>
@@ -113,7 +113,8 @@
 
     let myName = "";
 
-    window.registerUser = async () => {
+    // Register Button Event Listener
+    document.getElementById("register-btn").addEventListener("click", async () => {
         const nameInput = document.getElementById("username").value.trim();
         if (!nameInput) {
             alert("Please enter your name!");
@@ -125,29 +126,47 @@
             alert("Registered successfully!");
             document.getElementById("reg-section").style.display = "none";
         } catch (error) {
-            console.error("Error: ", error);
+            console.error("Firebase Registration Error: ", error);
+            alert("Registration failed! Check console.");
         }
-    };
+    });
 
+    // Real-time Users Fetching
     onSnapshot(collection(db, "users"), (snapshot) => {
         const listDiv = document.getElementById("user-list");
         listDiv.innerHTML = "";
         
+        if (snapshot.empty) {
+            listDiv.innerHTML = "<p style='color: #94a3b8; text-align: center;'>No users found.</p>";
+            return;
+        }
+
         snapshot.forEach((doc) => {
             const userData = doc.data();
-            listDiv.innerHTML += `
-                <div class="user-item">
-                    <span>👤 ${userData.name}</span>
-                    <div class="call-btns">
-                        <button class="btn-video" onclick="startCall('${userData.name}', 'Video')">📹 Video</button>
-                        <button class="btn-voice" onclick="startCall('${userData.name}', 'Voice')">📞 Voice</button>
-                    </div>
+            
+            const userItem = document.createElement("div");
+            userItem.className = "user-item";
+            userItem.innerHTML = `
+                <span>👤 ${userData.name}</span>
+                <div class="call-btns">
+                    <button class="btn-video">📹 Video</button>
+                    <button class="btn-voice">📞 Voice</button>
                 </div>
             `;
+
+            // Attach event listeners safely to dynamically created buttons
+            userItem.querySelector(".btn-video").addEventListener("click", () => {
+                startCall(userData.name, 'Video');
+            });
+            userItem.querySelector(".btn-voice").addEventListener("click", () => {
+                startCall(userData.name, 'Voice');
+            });
+
+            listDiv.appendChild(userItem);
         });
     });
 
-    window.startCall = (targetUserName, callType) => {
+    function startCall(targetUserName, callType) {
         if (!myName) {
             alert("Pehle upar apna naam daal kar Register karein!");
             return;
@@ -179,7 +198,7 @@
                 window.location.reload();
             },
         });
-    };
+    }
 </script>
 
 </body>
