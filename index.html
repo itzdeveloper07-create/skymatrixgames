@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IKVATOR - Voice & Video Call App</title>
-    <!-- ZegoCloud Prebuilt UIKit -->
-    <script src="https://zegocloud.github.io/zego_uikit_prebuilt_web/zego_uikit_prebuilt_web.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -84,7 +82,7 @@
     <h2>IKVATOR</h2>
     <div id="reg-section">
         <input type="text" id="username" placeholder="Enter your name to register">
-        <button class="action-btn" onclick="registerUser()">Register</button>
+        <button class="action-btn" id="reg-btn">Register</button>
     </div>
 
     <h3>Active Users</h3>
@@ -97,8 +95,8 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+    import { ZegoUIKitPrebuilt } from "https://unpkg.com/@zegocloud/zego_uikit_prebuilt/zego_uikit_prebuilt.js";
 
-    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyDZpVGl3pinRuoXWsKLObSyl1HvOgWC6iQ",
         authDomain: "ikvator-5e95d.firebaseapp.com",
@@ -114,8 +112,8 @@
 
     let myName = "";
 
-    // Register User function
-    window.registerUser = async () => {
+    // Register button event listener
+    document.getElementById("reg-btn").addEventListener("click", async () => {
         const nameInput = document.getElementById("username").value.trim();
         if (!nameInput) {
             alert("Please enter your name!");
@@ -124,34 +122,40 @@
         myName = nameInput;
         try {
             await addDoc(collection(db, "users"), { name: myName });
-            alert("Registered successfully! You can now see users below.");
+            alert("Registered successfully!");
             document.getElementById("reg-section").style.display = "none";
         } catch (error) {
-            console.error("Error adding document: ", error);
+            console.error("Error: ", error);
         }
-    };
+    });
 
-    // Real-time User List fetch karna
+    // Real-time user list
     onSnapshot(collection(db, "users"), (snapshot) => {
         const listDiv = document.getElementById("user-list");
         listDiv.innerHTML = "";
         
         snapshot.forEach((doc) => {
             const userData = doc.data();
-            listDiv.innerHTML += `
-                <div class="user-item">
-                    <span>👤 ${userData.name}</span>
-                    <div class="call-btns">
-                        <button class="btn-video" onclick="startCall('${userData.name}', 'Video')">📹 Video</button>
-                        <button class="btn-voice" onclick="startCall('${userData.name}', 'Voice')">📞 Voice</button>
-                    </div>
+            
+            const userItem = document.createElement("div");
+            userItem.className = "user-item";
+            userItem.innerHTML = `
+                <span>👤 ${userData.name}</span>
+                <div class="call-btns">
+                    <button class="btn-video">📹 Video</button>
+                    <button class="btn-voice">📞 Voice</button>
                 </div>
             `;
+
+            // Button click listeners for calling
+            userItem.querySelector(".btn-video").addEventListener("click", () => startCall(userData.name, 'Video'));
+            userItem.querySelector(".btn-voice").addEventListener("click", () => startCall(userData.name, 'Voice'));
+
+            listDiv.appendChild(userItem);
         });
     });
 
-    // ZegoCloud Call Setup
-    window.startCall = (targetUserName, callType) => {
+    function startCall(targetUserName, callType) {
         if (!myName) {
             alert("Pehle upar apna naam daal kar Register karein!");
             return;
@@ -160,10 +164,8 @@
         const roomID = "IKVATOR_ROOM_" + [myName, targetUserName].sort().join("_");
         const userID = "user_" + Math.floor(Math.random() * 100000);
         
-        // --- ZEGO CREDENTIALS (ADDED) ---
         const appID = 543623560; 
         const serverSecret = "50c109514dc9d2ff05344c803e6a8628"; 
-        // ---------------------------------
 
         const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(appID, serverSecret, roomID, userID, myName);
         const zp = ZegoUIKitPrebuilt.create(kitToken);
@@ -180,7 +182,7 @@
                 window.location.reload();
             },
         });
-    };
+    }
 </script>
 
 </body>
